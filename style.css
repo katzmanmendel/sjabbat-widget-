@@ -1,0 +1,318 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink: #1a1a18;
+  --ink-light: #5a5a54;
+  --ink-faint: #9a9a92;
+  --cream: #f7f5f0;
+  --cream-dark: #efecea;
+  --gold: #b8963e;
+  --gold-light: #d4af6a;
+  --rule: #dedad3;
+  --white: #ffffff;
+}
+
+body {
+  font-family: 'DM Sans', 'Segoe UI', sans-serif;
+  background: var(--cream);
+  color: var(--ink);
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+
+.widget {
+  width: 100%;
+  max-width: 780px;
+}
+
+/* Header */
+.widget-header {
+  margin-bottom: 32px;
+}
+
+.widget-title {
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 2rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+.widget-title span {
+  font-style: italic;
+  color: var(--gold);
+}
+
+/* Zone selector */
+.zone-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.zone-label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+
+.zone-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.zone-pill {
+  background: var(--white);
+  border: 1px solid var(--rule);
+  border-radius: 100px;
+  padding: 5px 14px;
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--ink-light);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.zone-pill:hover {
+  border-color: var(--gold);
+  color: var(--ink);
+}
+
+.zone-pill.active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--white);
+}
+
+/* Week cards */
+.weeks-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 560px) {
+  .weeks-grid { grid-template-columns: 1fr; }
+}
+
+.week-card {
+  background: var(--white);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 24px;
+  position: relative;
+  transition: box-shadow 0.2s ease;
+  animation: fadeUp 0.3s ease both;
+}
+
+.week-card:nth-child(2) { animation-delay: 0.06s; }
+
+.week-card:hover {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+
+.week-card.current {
+  border-color: var(--gold);
+}
+
+.week-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold);
+  background: rgba(184,150,62,0.08);
+  border-radius: 100px;
+  padding: 3px 10px;
+}
+
+.week-badge.muted {
+  color: var(--ink-faint);
+  background: var(--cream-dark);
+}
+
+.week-parasha {
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 500;
+  margin-bottom: 4px;
+  padding-right: 70px;
+  line-height: 1.2;
+}
+
+.week-date-range {
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+  letter-spacing: 0.04em;
+  margin-bottom: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.time-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 7px 0;
+}
+
+.time-row + .time-row {
+  border-top: 1px solid var(--cream-dark);
+}
+
+.time-label {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--ink-light);
+  letter-spacing: 0.02em;
+}
+
+.time-day {
+  font-size: 0.65rem;
+  color: var(--ink-faint);
+  margin-left: 4px;
+}
+
+.time-value {
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: 0.02em;
+}
+
+.time-value.unavailable {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+/* Jomtov card styling */
+.week-card.jomtov {
+  background: linear-gradient(135deg, #fffdf7 0%, var(--white) 100%);
+}
+
+.jomtov-tag {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold);
+  border: 1px solid var(--gold-light);
+  border-radius: 100px;
+  padding: 2px 8px;
+  margin-bottom: 10px;
+}
+
+/* Picker section */
+.picker-section {
+  background: var(--white);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.picker-label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+
+.picker-select {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  color: var(--ink);
+  background: var(--cream);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 8px 32px 8px 12px;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%239a9a92' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  transition: border-color 0.15s ease;
+  flex: 1;
+  min-width: 180px;
+}
+
+.picker-select:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.picker-nav {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.nav-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--rule);
+  background: var(--cream);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-light);
+  transition: all 0.15s ease;
+  font-size: 0.9rem;
+}
+
+.nav-btn:hover {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--white);
+}
+
+/* Extra week */
+.extra-week {
+  margin-top: 16px;
+  display: none;
+}
+
+.extra-week.visible {
+  display: block;
+}
+
+/* Footnote */
+.widget-footnote {
+  margin-top: 20px;
+  font-size: 0.7rem;
+  color: var(--ink-faint);
+  line-height: 1.8;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

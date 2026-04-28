@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sjabbat Tijden Nederland</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="widget">
+
+  <div class="widget-header">
+    <div class="widget-title">Sjabbat Tijden<br><span>Nederland</span></div>
+  </div>
+
+  <div class="zone-bar">
+    <span class="zone-label">Zone</span>
+    <div class="zone-pills" id="zonePills">
+      <button class="zone-pill active" data-zone="1">Zone 1</button>
+      <button class="zone-pill" data-zone="amsterdam">Gr. Amsterdam</button>
+      <button class="zone-pill" data-zone="2">Zone 2</button>
+      <button class="zone-pill" data-zone="3">Zone 3</button>
+      <button class="zone-pill" data-zone="4">Zone 4</button>
+      <button class="zone-pill" data-zone="5">Zone 5</button>
+    </div>
+  </div>
+
+  <div class="weeks-grid" id="weeksGrid"></div>
+
+  <div class="picker-section">
+    <span class="picker-label">Andere week</span>
+    <select class="picker-select" id="weekPicker"></select>
+    <div class="picker-nav">
+      <button class="nav-btn" id="prevWeek" title="Vorige week">&#8592;</button>
+      <button class="nav-btn" id="nextWeek" title="Volgende week">&#8594;</button>
+    </div>
+  </div>
+
+  <div class="extra-week" id="extraWeek"></div>
+
+  <p class="widget-footnote">
+    <strong>Zone 1:</strong> Friesland, Groningen, Drente, Texel, Den Helder &nbsp;·&nbsp;
+    <strong>Gr. Amsterdam:</strong> Groot Amsterdam &nbsp;·&nbsp;
+    <strong>Zone 2:</strong> Noord-Holland (excl. Texel, Den Helder &amp; Gr. Amsterdam), Flevoland, Overijssel, Nijkerk, Harderwijk, Elburg, Hattem<br>
+    <strong>Zone 3:</strong> Zuid-Holland, Utrecht, Gelderland (excl. Nijkerk, Harderwijk, Elburg &amp; Hattem) &nbsp;·&nbsp;
+    <strong>Zone 4:</strong> Zeeland, Noord-Brabant, Limburg ten noorden van Roermond &nbsp;·&nbsp;
+    <strong>Zone 5:</strong> Roermond en Limburg ten zuiden van Roermond
+  </p>
+
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
