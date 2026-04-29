@@ -1,199 +1,126 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// SJABBAT WIDGET — app.js
-// ─────────────────────────────────────────────────────────────────────────────
+// Sjabbat Tijden Nederland 2025
+// Bron: officiële kalender
+// Zones: 1 | 2 | amsterdam | 3 | 4 | 5
 
-let currentZone = "1";
-let pickerIndex = 2;
+const SJABBAT_DATA = {
 
-// ── HELPERS ──────────────────────────────────────────────────────────────────
+  // ── JANUARI ──────────────────────────────────────────────
+  "2025-01-10": {
+    naam: "Sjemot",
+    begin: { "1":"16:23", "2":"16:27", "amsterdam":"16:30", "3":"16:30", "4":"16:35", "5":"16:37" },
+    einde: { "1":"17:37", "2":"17:40", "amsterdam":"17:38", "3":"17:44", "4":"17:46", "5":"17:40" },
+  },
+  "2025-01-17": {
+    naam: "Wa'eera",
+    begin: { "1":"16:34", "2":"16:38", "amsterdam":"16:40", "3":"16:41", "4":"16:45", "5":"16:47" },
+    einde: { "1":"17:47", "2":"17:50", "amsterdam":"17:48", "3":"17:54", "4":"17:57", "5":"17:49" },
+  },
+  "2025-01-24": {
+    naam: "Bo",
+    begin: { "1":"16:46", "2":"16:50", "amsterdam":"16:52", "3":"16:52", "4":"16:57", "5":"16:58" },
+    einde: { "1":"17:58", "2":"18:00", "amsterdam":"17:59", "3":"18:05", "4":"18:08", "5":"18:00" },
+  },
+  "2025-01-31": {
+    naam: "Besjalach",
+    begin: { "1":"16:59", "2":"17:03", "amsterdam":"17:05", "3":"17:05", "4":"17:09", "5":"17:11" },
+    einde: { "1":"18:10", "2":"18:12", "amsterdam":"18:11", "3":"18:16", "4":"18:19", "5":"18:11" },
+  },
 
-// Timezone-safe ISO date string (avoids UTC offset shifting the date)
-function toISO(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
+  // ── FEBRUARI ──────────────────────────────────────────────
+  "2025-02-07": {
+    naam: "Jitro",
+    begin: { "1":"17:13", "2":"17:16", "amsterdam":"17:18", "3":"17:18", "4":"17:22", "5":"17:23" },
+    einde: { "1":"18:22", "2":"18:24", "amsterdam":"18:23", "3":"18:28", "4":"18:30", "5":"18:22" },
+  },
+  "2025-02-14": {
+    naam: "Misjpatiem",
+    begin: { "1":"17:27", "2":"17:29", "amsterdam":"17:31", "3":"17:31", "4":"17:35", "5":"17:36" },
+    einde: { "1":"18:35", "2":"18:36", "amsterdam":"18:35", "3":"18:40", "4":"18:42", "5":"18:34" },
+  },
+  "2025-02-21": {
+    naam: "Teroema",
+    begin: { "1":"17:40", "2":"17:43", "amsterdam":"17:45", "3":"17:44", "4":"17:48", "5":"17:48" },
+    einde: { "1":"18:48", "2":"18:49", "amsterdam":"18:47", "3":"18:52", "4":"18:54", "5":"18:45" },
+  },
+  "2025-02-28": {
+    naam: "Tetsawee",
+    begin: { "1":"17:54", "2":"17:56", "amsterdam":"17:58", "3":"17:57", "4":"18:00", "5":"18:01" },
+    einde: { "1":"19:00", "2":"19:01", "amsterdam":"19:00", "3":"19:04", "4":"19:06", "5":"18:57" },
+  },
 
-// Returns the Friday of the CURRENT week (Mon–Sun), or next Friday if today is Sat/Sun
-function getThisFriday() {
-  const today = new Date();
-  const day = today.getDay(); // 0=Sun,1=Mon,...,5=Fri,6=Sat
+  // ── MAART ──────────────────────────────────────────────
+  "2025-03-07": {
+    naam: "Kie Tisa",
+    begin: { "1":"18:07", "2":"18:08", "amsterdam":"18:10", "3":"18:10", "4":"18:13", "5":"18:13" },
+    einde: { "1":"19:13", "2":"19:14", "amsterdam":"19:12", "3":"19:16", "4":"19:18", "5":"19:09" },
+  },
+  "2025-03-14": {
+    naam: "Wajakheel-Pekodee",
+    begin: { "1":"18:20", "2":"18:21", "amsterdam":"18:23", "3":"18:22", "4":"18:25", "5":"18:25" },
+    einde: { "1":"19:26", "2":"19:26", "amsterdam":"19:25", "3":"19:28", "4":"19:30", "5":"19:21" },
+  },
+  "2025-03-21": {
+    naam: "Wajikra",
+    begin: { "1":"18:33", "2":"18:33", "amsterdam":"18:35", "3":"18:34", "4":"18:37", "5":"18:37" },
+    einde: { "1":"19:39", "2":"19:39", "amsterdam":"19:37", "3":"19:41", "4":"19:42", "5":"19:32" },
+  },
+  "2025-03-28": {
+    naam: "Tsav",
+    begin: { "1":"18:45", "2":"18:45", "amsterdam":"18:47", "3":"18:46", "4":"18:48", "5":"18:48" },
+    einde: { "1":"19:52", "2":"19:51", "amsterdam":"19:50", "3":"19:53", "4":"19:54", "5":"19:44" },
+  },
 
-  let daysUntilFriday;
-  if (day === 6) {
-    // Saturday: Sjabbat is ongoing, show next week's Friday
-    daysUntilFriday = 6;
-  } else if (day === 0) {
-    // Sunday: show this coming Friday
-    daysUntilFriday = 5;
-  } else {
-    // Mon(1)–Fri(5): go forward to Friday of this week
-    daysUntilFriday = 5 - day;
-  }
+  // ── APRIL ──────────────────────────────────────────────
+  "2025-04-02": {
+    naam: "Eerste dag Pesach",
+    jomtov: true,
+    begin: { "1":"19:54", "2":"19:54", "amsterdam":"20:57", "3":"19:55", "4":"19:57", "5":"19:57" },
+    einde: { "1":"21:01", "2":"21:01", "amsterdam":"20:59", "3":"21:02", "4":"00:43", "5":"20:53" },
+  },
+  "2025-04-03": {
+    naam: "Tweede dag Pesach",
+    jomtov: true,
+    begin: { "1":"18:58", "2":"18:58", "amsterdam":"18:56", "3":"19:00", "4":"19:02", "5":"18:52" },
+    einde: { "1":"21:05", "2":"21:05", "amsterdam":"21:03", "3":"21:06", "4":"21:07", "5":"20:56" },
+  },
+  "2025-04-08": {
+    naam: "Zevende dag Pesach",
+    jomtov: true,
+    begin: { "1":"19:03", "2":"19:03", "amsterdam":"19:02", "3":"19:05", "4":"19:07", "5":"18:57" },
+    einde: { "1":"21:13", "2":"21:12", "amsterdam":"21:10", "3":"21:13", "4":"21:14", "5":"21:03" },
+  },
+  "2025-04-09": {
+    naam: "Achste dag Pesach",
+    jomtov: true,
+    begin: { "1":"21:13", "2":"21:12", "amsterdam":"21:10", "3":"21:13", "4":"21:14", "5":"21:03" },
+    einde: { "1":"21:15", "2":"21:14", "amsterdam":"21:12", "3":"21:15", "4":"21:16", "5":"21:05" },
+  },
+  "2025-04-11": {
+    naam: "Sjemini",
+    begin: { "1":"19:07", "2":"19:07", "amsterdam":"19:06", "3":"19:09", "4":"19:10", "5":"19:01" },
+    einde: { "1":"21:19", "2":"21:18", "amsterdam":"21:16", "3":"21:18", "4":"21:19", "5":"21:09" },
+  },
+  "2025-04-18": {
+    naam: "Tazria-Metsora",
+    begin: { "1":"19:17", "2":"19:17", "amsterdam":"19:15", "3":"19:18", "4":"19:19", "5":"19:09" },
+    einde: { "1":"21:33", "2":"21:32", "amsterdam":"21:29", "3":"21:32", "4":"21:32", "5":"21:21" },
+  },
+  "2025-04-25": {
+    naam: "Acharee Mot",
+    begin: { "1":"19:27", "2":"19:26", "amsterdam":"19:24", "3":"19:27", "4":"19:28", "5":"19:18" },
+    einde: { "1":"21:47", "2":"21:46", "amsterdam":"21:43", "3":"21:45", "4":"21:46", "5":"21:34" },
+  },
 
-  const friday = new Date(today);
-  friday.setDate(today.getDate() + daysUntilFriday);
-  return friday;
-}
+  // ── MEI ──────────────────────────────────────────────
+  "2025-05-02": {
+    naam: "Emor",
+    begin: { "1":"19:36", "2":"19:36", "amsterdam":"19:34", "3":"19:36", "4":"19:37", "5":"19:27" },
+    einde: { "1":"22:02", "2":"22:01", "amsterdam":"21:57", "3":"21:59", "4":"21:59", "5":"21:48" },
+  },
+  "2025-05-09": {
+    naam: "Behar",
+    begin: { "1":"19:46", "2":"19:45", "amsterdam":"19:43", "3":"19:45", "4":"19:46", "5":"19:35" },
+    einde: { "1":"22:16", "2":"22:15", "amsterdam":"22:11", "3":"22:12", "4":"22:12", "5":"22:01" },
+  },
 
-function addWeeks(date, n) {
-  const d = new Date(date);
-  d.setDate(d.getDate() + n * 7);
-  return d;
-}
-
-function formatShortDate(date) {
-  return date.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
-}
-
-function formatLongDate(date) {
-  return date.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
-}
-
-// Find the SJABBAT_DATA entry for a given Friday ISO date (exact match first,
-// then the closest earlier entry as fallback)
-function getEntry(fridayISO) {
-  // Exact match
-  if (SJABBAT_DATA[fridayISO]) {
-    return SJABBAT_DATA[fridayISO];
-  }
-  // Closest earlier key
-  const keys = Object.keys(SJABBAT_DATA).sort();
-  let best = null;
-  for (const k of keys) {
-    if (k <= fridayISO) best = k;
-    else break;
-  }
-  return best ? SJABBAT_DATA[best] : null;
-}
-
-// ── CARD BUILDER ─────────────────────────────────────────────────────────────
-
-function buildCard(fridayDate, badgeText, isCurrent) {
-  const fridayISO = toISO(fridayDate);
-  const saturdayDate = new Date(fridayDate);
-  saturdayDate.setDate(fridayDate.getDate() + 1);
-
-  const entry = getEntry(fridayISO);
-
-  const dateRange = `${formatShortDate(fridayDate)} – ${formatShortDate(saturdayDate)}`;
-
-  let naam = "—";
-  let beginTijd = null;
-  let eindeTijd = null;
-  let isJomtov = false;
-
-  if (entry) {
-    naam      = entry.naam  || "—";
-    isJomtov  = !!entry.jomtov;
-    beginTijd = entry.begin?.[currentZone] || null;
-    eindeTijd = entry.einde?.[currentZone] || null;
-  }
-
-  const cardClass   = ['week-card', isCurrent ? 'current' : '', isJomtov ? 'jomtov' : ''].filter(Boolean).join(' ');
-  const badgeClass  = isCurrent ? 'week-badge' : 'week-badge muted';
-  const jomtovTag   = isJomtov ? `<span class="jomtov-tag">Jomtov</span><br>` : '';
-
-  const beginHtml = beginTijd
-    ? `<span class="time-value">${beginTijd}</span>`
-    : `<span class="time-value unavailable">nog niet beschikbaar</span>`;
-
-  const eindeHtml = eindeTijd
-    ? `<span class="time-value">${eindeTijd}</span>`
-    : `<span class="time-value unavailable">nog niet beschikbaar</span>`;
-
-  return `
-    <div class="${cardClass}">
-      <span class="${badgeClass}">${badgeText}</span>
-      ${jomtovTag}
-      <div class="week-parasha">${naam}</div>
-      <div class="week-date-range">${dateRange}</div>
-      <div class="time-row">
-        <span class="time-label">Begin Sjabbat <span class="time-day">vr.</span></span>
-        ${beginHtml}
-      </div>
-      <div class="time-row">
-        <span class="time-label">Einde Sjabbat <span class="time-day">za.</span></span>
-        ${eindeHtml}
-      </div>
-    </div>`;
-}
-
-// ── RENDER FUNCTIONS ─────────────────────────────────────────────────────────
-
-function renderWeeks() {
-  const thisFriday = getThisFriday();
-  const nextFriday = addWeeks(thisFriday, 1);
-
-  document.getElementById('weeksGrid').innerHTML =
-    buildCard(thisFriday, 'Deze week', true) +
-    buildCard(nextFriday, 'Volgende week', false);
-}
-
-function populatePicker() {
-  const picker      = document.getElementById('weekPicker');
-  const thisFriday  = getThisFriday();
-
-  picker.innerHTML = '';
-  for (let i = -8; i <= 30; i++) {
-    const fri = addWeeks(thisFriday, i);
-    const sat = new Date(fri);
-    sat.setDate(fri.getDate() + 1);
-
-    const opt   = document.createElement('option');
-    opt.value   = i;
-    let label   = `${formatShortDate(fri)} – ${formatShortDate(sat)}`;
-    if (i === 0) label += ' (deze week)';
-    if (i === 1) label += ' (volgende week)';
-    opt.textContent = label;
-    picker.appendChild(opt);
-  }
-  picker.value = pickerIndex;
-}
-
-function renderExtraWeek() {
-  const thisFriday    = getThisFriday();
-  const targetFriday  = addWeeks(thisFriday, pickerIndex);
-
-  const extraWeek = document.getElementById('extraWeek');
-  extraWeek.innerHTML = buildCard(targetFriday, 'Gekozen week', false);
-  extraWeek.classList.add('visible');
-}
-
-function refresh() {
-  renderWeeks();
-  renderExtraWeek();
-}
-
-// ── EVENT LISTENERS ───────────────────────────────────────────────────────────
-
-document.getElementById('zonePills').addEventListener('click', e => {
-  if (!e.target.classList.contains('zone-pill')) return;
-  document.querySelectorAll('.zone-pill').forEach(p => p.classList.remove('active'));
-  e.target.classList.add('active');
-  currentZone = e.target.dataset.zone;
-  refresh();
-});
-
-document.getElementById('weekPicker').addEventListener('change', e => {
-  pickerIndex = parseInt(e.target.value);
-  renderExtraWeek();
-});
-
-document.getElementById('prevWeek').addEventListener('click', () => {
-  pickerIndex = Math.max(-8, pickerIndex - 1);
-  document.getElementById('weekPicker').value = pickerIndex;
-  renderExtraWeek();
-});
-
-document.getElementById('nextWeek').addEventListener('click', () => {
-  pickerIndex = Math.min(30, pickerIndex + 1);
-  document.getElementById('weekPicker').value = pickerIndex;
-  renderExtraWeek();
-});
-
-// ── INIT ──────────────────────────────────────────────────────────────────────
-
-populatePicker();
-refresh();
+};

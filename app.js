@@ -1,19 +1,31 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// SJABBAT WIDGET — app.js
+// Sjabbat Tijden Widget — app.js
 // ─────────────────────────────────────────────────────────────────────────────
 
-let currentZone = "1";
-let pickerIndex = 2; // default: show week after next in picker
+let currentZone   = '1';
+let pickerOffset  = 2;   // weeks offset from "this Friday" shown in picker
 
-// ── HELPERS ──────────────────────────────────────────────────────────────────
+// ── Date helpers ──────────────────────────────────────────────────────────────
 
-function getFridayOfWeek(date) {
-  const d = new Date(date);
-  const day = d.getDay(); // 0=Sun
-  // Friday = day 5; go to this week's Friday
-  const diff = (5 - day + 7) % 7;
-  d.setDate(d.getDate() + diff);
-  return d;
+// Local-timezone ISO date: "YYYY-MM-DD"  (avoids UTC shift)
+function toISO(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// The Friday that anchors "this week".
+// Mon–Fri  → this week's Friday
+// Sat      → NEXT Friday (Sjabbat is ongoing)
+// Sun      → this coming Friday
+function getThisFriday() {
+  const today = new Date();
+  const day   = today.getDay(); // 0=Sun … 6=Sat
+  let offset;
+  if      (day === 6) offset = 6;   // Sat → +6 days
+  else if (day === 0) offset = 5;   // Sun → +5 days
+  else                offset = 5 - day; // Mon(1)→+4 … Fri(5)→+0
+  const fri = new Date(today);
+  fri.setDate(today.getDate() + offset);
+  return fri;
 }
 
 function addWeeks(date, n) {
@@ -22,77 +34,68 @@ function addWeeks(date, n) {
   return d;
 }
 
-function toISO(date) {
-  return date.toISOString().split('T')[0];
+function fmtShort(d) {
+  return d.toLocaleDateString('nl-NL', { day:'numeric', month:'short' });
+}
+function fmtLong(d) {
+  return d.toLocaleDateString('nl-NL', { day:'numeric', month:'long', year:'numeric' });
 }
 
-function formatShortDate(date) {
-  return date.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
-}
+// ── Data lookup ───────────────────────────────────────────────────────────────
 
-function formatLongDate(date) {
-  return date.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-}
-
-// Find the SJABBAT_DATA entry whose key is <= fridayISO (closest match)
+// Returns the SJABBAT_DATA entry whose key exactly matches fridayISO,
+// or null if no entry exists for that date.
 function getEntry(fridayISO) {
-  const keys = Object.keys(SJABBAT_DATA).sort();
-  // Find exact match first
-  if (SJABBAT_DATA[fridayISO]) return { iso: fridayISO, ...SJABBAT_DATA[fridayISO] };
-  // Otherwise find closest Friday on or before
-  let best = null;
-  for (const k of keys) {
-    if (k <= fridayISO) best = k;
-    else break;
-  }
-  if (best) return { iso: best, ...SJABBAT_DATA[best] };
-  return null;
+  return SJABBAT_DATA[fridayISO] || null;
 }
 
-// ── CARD BUILDER ─────────────────────────────────────────────────────────────
+// ── Card builder ──────────────────────────────────────────────────────────────
 
-function buildCard(fridayDate, badgeText, isCurrent) {
-  const fridayISO = toISO(fridayDate);
-  const saturdayDate = new Date(fridayDate);
-  saturdayDate.setDate(fridayDate.getDate() + 1);
+function buildCard(fridayDate, badgeText, badgeStyle) {
+  const iso = toISO(fridayDate);
+  const sat = new Date(fridayDate);
+  sat.setDate(fridayDate.getDate() + 1);
 
-  const entry = getEntry(fridayISO);
+  const entry = getEntry(iso);
 
-  const dateRange = `${formatShortDate(fridayDate)} – ${formatShortDate(saturdayDate)}`;
-
-  let naam = "—";
-  let beginTijd = null;
-  let eindeTijd = null;
-  let isJomtov = false;
-  let dataAvailable = false;
-
-  if (entry) {
-    naam = entry.naam || "—";
-    isJomtov = !!entry.jomtov;
-    beginTijd = entry.begin?.[currentZone] || null;
-    eindeTijd = entry.einde?.[currentZone] || null;
-    dataAvailable = !!(beginTijd && eindeTijd);
+  // ── No data for this date ──
+  if (!entry) {
+    return `
+      <div class="week-card">
+        <span class="week-badge muted">${badgeText}</span>
+        <div class="week-parasha">—</div>
+        <div class="week-dates">${fmtShort(fridayDate)} – ${fmtShort(sat)}</div>
+        <div class="time-row">
+          <span class="time-label">Begin Sjabbat <span class="time-day">vr.</span></span>
+          <span class="time-value none">geen data</span>
+        </div>
+        <div class="time-row">
+          <span class="time-label">Einde Sjabbat <span class="time-day">za.</span></span>
+          <span class="time-value none">geen data</span>
+        </div>
+      </div>`;
   }
 
-  const cardClass = ['week-card', isCurrent ? 'current' : '', isJomtov ? 'jomtov' : ''].filter(Boolean).join(' ');
-  const badgeClass = isCurrent ? 'week-badge' : 'week-badge muted';
+  const isJomtov   = !!entry.jomtov;
+  const cardClass  = ['week-card', badgeStyle === 'gold' ? 'current' : '', isJomtov ? 'jomtov' : ''].filter(Boolean).join(' ');
+  const jomtovTag  = isJomtov ? `<span class="jomtov-tag">Jomtov</span><br>` : '';
 
-  const jomtovTag = isJomtov ? `<span class="jomtov-tag">Jomtov</span><br>` : '';
+  const begin = entry.begin?.[currentZone];
+  const einde = entry.einde?.[currentZone];
 
-  const beginHtml = beginTijd
-    ? `<span class="time-value">${beginTijd}</span>`
-    : `<span class="time-value unavailable">nog niet beschikbaar</span>`;
-
-  const eindeHtml = eindeTijd
-    ? `<span class="time-value">${eindeTijd}</span>`
-    : `<span class="time-value unavailable">nog niet beschikbaar</span>`;
+  const beginHtml = begin
+    ? `<span class="time-value">${begin}</span>`
+    : `<span class="time-value none">—</span>`;
+  const eindeHtml = einde
+    ? `<span class="time-value">${einde}</span>`
+    : `<span class="time-value none">—</span>`;
 
   return `
     <div class="${cardClass}">
-      <span class="${badgeClass}">${badgeText}</span>
+      <span class="week-badge ${badgeStyle}">${badgeText}</span>
       ${jomtovTag}
-      <div class="week-parasha">${naam}</div>
-      <div class="week-date-range">${dateRange}</div>
+      <div class="week-parasha">${entry.naam}</div>
+      <div class="week-dates">${fmtShort(fridayDate)} – ${fmtShort(sat)}</div>
       <div class="time-row">
         <span class="time-label">Begin Sjabbat <span class="time-day">vr.</span></span>
         ${beginHtml}
@@ -104,58 +107,56 @@ function buildCard(fridayDate, badgeText, isCurrent) {
     </div>`;
 }
 
-// ── RENDER FUNCTIONS ─────────────────────────────────────────────────────────
+// ── Render ────────────────────────────────────────────────────────────────────
 
 function renderWeeks() {
-  const today = new Date();
-  // Current week: find this Friday (or next Friday if today is Saturday/Sunday)
-  let thisFriday = getFridayOfWeek(today);
-  // If we're past Friday evening (Saturday/Sunday), move to next week
-  if (today.getDay() === 6 || (today.getDay() === 0)) {
-    thisFriday = addWeeks(thisFriday, 1);
-  }
-  const nextFriday = addWeeks(thisFriday, 1);
-
+  const fri1 = getThisFriday();
+  const fri2 = addWeeks(fri1, 1);
   document.getElementById('weeksGrid').innerHTML =
-    buildCard(thisFriday, 'Deze week', true) +
-    buildCard(nextFriday, 'Volgende week', false);
+    buildCard(fri1, 'Deze week',     'gold') +
+    buildCard(fri2, 'Volgende week', 'muted');
 }
 
 function populatePicker() {
-  const picker = document.getElementById('weekPicker');
-  const today = new Date();
-  let thisFriday = getFridayOfWeek(today);
-  if (today.getDay() === 6 || today.getDay() === 0) {
-    thisFriday = addWeeks(thisFriday, 1);
-  }
+  const select  = document.getElementById('weekPicker');
+  const thisFri = getThisFriday();
+  select.innerHTML = '';
 
-  picker.innerHTML = '';
-  for (let i = -8; i <= 30; i++) {
-    const fri = addWeeks(thisFriday, i);
-    const sat = new Date(fri); sat.setDate(fri.getDate() + 1);
-    const label = `${formatShortDate(fri)} – ${formatShortDate(sat)}`;
+  // Show all weeks that exist in the data, plus ±4 weeks around today
+  const dataKeys = Object.keys(SJABBAT_DATA).sort();
+  const first    = dataKeys[0];
+  const last     = dataKeys[dataKeys.length - 1];
+
+  // Range: from 4 weeks before today OR first data entry, to 4 weeks after last data entry
+  for (let i = -4; i <= 52; i++) {
+    const fri = addWeeks(thisFri, i);
+    const iso = toISO(fri);
+    if (iso < first && i < -1) continue; // skip far past with no data
+    if (iso > last)            continue; // skip future with no data
+    const sat = new Date(fri);
+    sat.setDate(fri.getDate() + 1);
     const opt = document.createElement('option');
     opt.value = i;
-    let text = label;
-    if (i === 0) text += ' (deze week)';
-    if (i === 1) text += ' (volgende week)';
-    opt.textContent = text;
-    picker.appendChild(opt);
+    let label = `${fmtShort(fri)} – ${fmtShort(sat)}`;
+    const entry = SJABBAT_DATA[iso];
+    if (entry) label += `  —  ${entry.naam}`;
+    if (i === 0) label += ' (deze week)';
+    if (i === 1) label += ' (volgende week)';
+    opt.textContent = label;
+    select.appendChild(opt);
   }
-  picker.value = pickerIndex;
+  select.value = pickerOffset;
 }
 
 function renderExtraWeek() {
-  const today = new Date();
-  let thisFriday = getFridayOfWeek(today);
-  if (today.getDay() === 6 || today.getDay() === 0) {
-    thisFriday = addWeeks(thisFriday, 1);
-  }
-  const targetFriday = addWeeks(thisFriday, pickerIndex);
+  const fri   = addWeeks(getThisFriday(), pickerOffset);
+  const sat   = new Date(fri); sat.setDate(fri.getDate() + 1);
+  const extra = document.getElementById('extraWeek');
 
-  const extraWeek = document.getElementById('extraWeek');
-  extraWeek.innerHTML = buildCard(targetFriday, 'Gekozen week', false);
-  extraWeek.classList.add('visible');
+  extra.innerHTML = `<div style="animation:fadeUp 0.2s ease both">
+    ${buildCard(fri, 'Gekozen week', 'muted')}
+  </div>`;
+  extra.classList.add('visible');
 }
 
 function refresh() {
@@ -163,7 +164,7 @@ function refresh() {
   renderExtraWeek();
 }
 
-// ── EVENT LISTENERS ───────────────────────────────────────────────────────────
+// ── Events ────────────────────────────────────────────────────────────────────
 
 document.getElementById('zonePills').addEventListener('click', e => {
   if (!e.target.classList.contains('zone-pill')) return;
@@ -174,23 +175,33 @@ document.getElementById('zonePills').addEventListener('click', e => {
 });
 
 document.getElementById('weekPicker').addEventListener('change', e => {
-  pickerIndex = parseInt(e.target.value);
+  pickerOffset = parseInt(e.target.value);
   renderExtraWeek();
 });
 
 document.getElementById('prevWeek').addEventListener('click', () => {
-  pickerIndex = Math.max(-8, pickerIndex - 1);
-  document.getElementById('weekPicker').value = pickerIndex;
-  renderExtraWeek();
+  const opts  = Array.from(document.getElementById('weekPicker').options);
+  const vals  = opts.map(o => parseInt(o.value));
+  const cur   = vals.indexOf(pickerOffset);
+  if (cur > 0) {
+    pickerOffset = vals[cur - 1];
+    document.getElementById('weekPicker').value = pickerOffset;
+    renderExtraWeek();
+  }
 });
 
 document.getElementById('nextWeek').addEventListener('click', () => {
-  pickerIndex = Math.min(30, pickerIndex + 1);
-  document.getElementById('weekPicker').value = pickerIndex;
-  renderExtraWeek();
+  const opts = Array.from(document.getElementById('weekPicker').options);
+  const vals = opts.map(o => parseInt(o.value));
+  const cur  = vals.indexOf(pickerOffset);
+  if (cur < vals.length - 1) {
+    pickerOffset = vals[cur + 1];
+    document.getElementById('weekPicker').value = pickerOffset;
+    renderExtraWeek();
+  }
 });
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────────────────────────
 
 populatePicker();
 refresh();
