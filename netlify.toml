@@ -5,6 +5,7 @@
   for = "/*"
   [headers.values]
     Cache-Control = "public, max-age=3600"
+    Permissions-Policy = "geolocation=(self)"
 
 [[headers]]
   for = "/data.js"
