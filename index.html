@@ -3,14 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sjabbat Tijden Nederland – NIK</title>
+  <title>Sjabbat Tijden Nederland</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- Rode header banner -->
   <div class="widget-header">
     <div class="header-title">Sjabbat Tijden</div>
     <div class="header-subtitle">Tijden voor heel Nederland</div>
@@ -20,7 +19,6 @@
     </div>
   </div>
 
-  <!-- Locatie-toestemming banner -->
   <div class="loc-banner" id="locBanner">
     <span class="loc-banner-txt">Sta locatietoegang toe voor automatische zone-selectie</span>
     <div class="loc-banner-actions">
@@ -31,49 +29,42 @@
 
   <div class="widget-body">
 
-    <!-- Zone kiezer -->
     <div class="zone-section">
       <div class="zone-section-label">Kies uw zone</div>
       <div class="zone-pills" id="zonePills">
         <button class="zone-pill" data-zone="1">Zone 1</button>
-        <button class="zone-pill" data-zone="amsterdam">Gr. Amsterdam</button>
         <button class="zone-pill" data-zone="2">Zone 2</button>
+        <button class="zone-pill" data-zone="amsterdam">Gr. Amsterdam</button>
         <button class="zone-pill" data-zone="3">Zone 3</button>
         <button class="zone-pill" data-zone="4">Zone 4</button>
         <button class="zone-pill" data-zone="5">Zone 5</button>
       </div>
     </div>
 
-    <!-- Huidige + volgende week -->
     <div class="weeks-grid" id="weeksGrid"></div>
 
-    <!-- Dropdown andere week -->
     <div class="picker-wrap">
-      <span class="picker-label">Andere week</span>
+      <span class="picker-label">Andere week / datum</span>
       <select class="picker-select" id="weekPicker"></select>
       <div class="picker-nav">
-        <button class="nav-btn" id="prevWeek" title="Vorige week">&#8592;</button>
-        <button class="nav-btn" id="nextWeek" title="Volgende week">&#8594;</button>
+        <button class="nav-btn" id="prevWeek" title="Vorige">&#8592;</button>
+        <button class="nav-btn" id="nextWeek" title="Volgende">&#8594;</button>
       </div>
     </div>
 
-    <!-- Gekozen week -->
     <div id="extraWeek" class="extra-week"></div>
 
-    <!-- Footer -->
     <div class="widget-footer">
       <div class="zone-legenda">
         <strong>Zone 1:</strong> Friesland, Groningen, Drente, Texel, Den Helder<br>
-        <strong>Gr. Amsterdam:</strong> Groot Amsterdam<br>
         <strong>Zone 2:</strong> Noord-Holland (excl. Texel, Den Helder &amp; Gr. Amsterdam), Flevoland, Overijssel, Nijkerk, Harderwijk, Elburg, Hattem<br>
+        <strong>Gr. Amsterdam:</strong> Groot Amsterdam<br>
         <strong>Zone 3:</strong> Zuid-Holland, Utrecht, Gelderland (excl. Nijkerk, Harderwijk, Elburg &amp; Hattem)<br>
         <strong>Zone 4:</strong> Zeeland, Noord-Brabant, Limburg ten noorden van Roermond<br>
         <strong>Zone 5:</strong> Roermond en Limburg ten zuiden van Roermond
       </div>
       <div class="nik-block">
-        <span class="nik-eyebrow">Tijden afkomstig uit de Loeach van het</span>
-        <span class="nik-title">NIK</span>
-        <span class="nik-subtitle">Nederlands-Israëlitisch<br>Kerkgenootschap</span>
+        <p class="nik-text">Tijden afkomstig uit de Loeach van het NIK (Nederlands-Israëlitisch Kerkgenootschap)</p>
       </div>
     </div>
 

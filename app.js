@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 let currentZone  = 'amsterdam';
-let pickerOffset = 0; // index in the allFridays array
+let pickerIndex  = 0; // index into allEntries array
 
 // ── Datum helpers ─────────────────────────────────────────────────────────────
 
@@ -17,9 +17,6 @@ function addDays(date, n) {
   return d;
 }
 
-function addWeeks(date, n) { return addDays(date, n * 7); }
-
-// Vrijdag van de lopende week (Zat/Zo → volgende vrijdag)
 function getThisFriday() {
   const today = new Date();
   const day   = today.getDay();
@@ -29,6 +26,10 @@ function getThisFriday() {
 
 function fmtShort(d) {
   return d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
+}
+
+function fmtDate(d) {
+  return d.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function fmtWeekday(d) {
@@ -50,41 +51,45 @@ function getJomtovBeforeFriday(fridayDate) {
   return null;
 }
 
+// ── Gesorteerde lijst van alle entries ───────────────────────────────────────
+
+// allEntries = array van { iso, date, entry } voor elke rij in SJABBAT_DATA
+let allEntries = [];
+
+function buildAllEntries() {
+  allEntries = Object.keys(SJABBAT_DATA)
+    .sort()
+    .map(iso => ({ iso, date: new Date(iso + 'T12:00:00'), entry: SJABBAT_DATA[iso] }));
+}
+
 // ── Kaartbouw ─────────────────────────────────────────────────────────────────
 
-function buildCard({ date, endDate, badgeText, badgeClass, isCurrent, beginDay, eindeDay }) {
-  const iso     = toISO(date);
+function buildCard({ iso, badgeText, badgeClass, isCurrent }) {
   const entry   = getEntry(iso);
-  const dateStr = endDate
-    ? `${fmtShort(date)} – ${fmtShort(endDate)}`
-    : `${fmtWeekday(date)} ${fmtShort(date)}`;
+  const date    = new Date(iso + 'T12:00:00');
 
   if (!entry) {
-    return `
-      <div class="week-card${isCurrent ? ' current' : ''}">
-        <span class="week-badge ${badgeClass}">${badgeText}</span>
-        <div class="week-parasha">—</div>
-        <div class="week-dates">${dateStr}</div>
-        <div class="time-row">
-          <span class="time-label">Begin <span class="time-day">${beginDay || 'vr.'}</span></span>
-          <span class="time-value none">geen data</span>
-        </div>
-        <div class="time-row">
-          <span class="time-label">Einde <span class="time-day">${eindeDay || 'za.'}</span></span>
-          <span class="time-value none">geen data</span>
-        </div>
-      </div>`;
+    return `<div class="week-card${isCurrent?' current':''}">
+      <span class="week-badge ${badgeClass}">${badgeText}</span>
+      <div class="week-parasha">—</div>
+      <div class="week-dates">${fmtDate(date)}</div>
+      <div class="time-row"><span class="time-label">Begin</span><span class="time-value none">geen data</span></div>
+      <div class="time-row"><span class="time-label">Einde</span><span class="time-value none">geen data</span></div>
+    </div>`;
   }
 
   const isJomtov = !!entry.jomtov;
   const cardCls  = ['week-card', isCurrent ? 'current' : '', isJomtov ? 'jomtov' : ''].filter(Boolean).join(' ');
   const jtTag    = isJomtov ? `<span class="jomtov-tag">Jomtov</span><br>` : '';
+  const begin    = entry.begin?.[currentZone];
+  const einde    = entry.einde?.[currentZone];
 
-  const begin = entry.begin?.[currentZone];
-  const einde = entry.einde?.[currentZone];
-
-  const beginLabel = isJomtov ? (beginDay || fmtWeekday(date)) : (beginDay || 'vr.');
-  const eindeLabel = eindeDay || 'za.';
+  // Determine day labels based on weekday
+  const day = date.getDay();
+  const dayLabel = date.toLocaleDateString('nl-NL', { weekday: 'short' });
+  // Einde is always next day
+  const eindDate = addDays(date, 1);
+  const eindLabel = eindDate.toLocaleDateString('nl-NL', { weekday: 'short' });
 
   const beginHtml = begin ? `<span class="time-value">${begin}</span>` : `<span class="time-value none">—</span>`;
   const eindeHtml = einde ? `<span class="time-value">${einde}</span>` : `<span class="time-value none">—</span>`;
@@ -94,101 +99,85 @@ function buildCard({ date, endDate, badgeText, badgeClass, isCurrent, beginDay, 
       <span class="week-badge ${badgeClass}">${badgeText}</span>
       ${jtTag}
       <div class="week-parasha">${entry.naam}</div>
-      <div class="week-dates">${dateStr}</div>
+      <div class="week-dates">${fmtDate(date)}</div>
       <div class="time-row">
-        <span class="time-label">Begin <span class="time-day">${beginLabel}</span></span>
+        <span class="time-label">Begin <span class="time-day">${dayLabel}</span></span>
         ${beginHtml}
       </div>
       <div class="time-row">
-        <span class="time-label">Einde <span class="time-day">${eindeLabel}</span></span>
+        <span class="time-label">Einde <span class="time-day">${eindLabel}</span></span>
         ${eindeHtml}
       </div>
     </div>`;
 }
 
+// ── Vind huidig en volgend item op basis van vandaag ─────────────────────────
+
+function findCurrentIndex() {
+  const today    = toISO(new Date());
+  const thisFri  = toISO(getThisFriday());
+
+  // Zoek de eerstvolgende entry op of na vandaag
+  for (let i = 0; i < allEntries.length; i++) {
+    if (allEntries[i].iso >= today) return i;
+  }
+  return allEntries.length - 1;
+}
+
 // ── Renderen ──────────────────────────────────────────────────────────────────
 
 function renderWeeks() {
-  const fri1 = getThisFriday();
-  const fri2 = addWeeks(fri1, 1);
-  const sat1 = addDays(fri1, 1);
-  const sat2 = addDays(fri2, 1);
+  const curIdx  = findCurrentIndex();
+  const nextIdx = Math.min(curIdx + 1, allEntries.length - 1);
 
-  const jt1 = getJomtovBeforeFriday(fri1);
-  const jt2 = getJomtovBeforeFriday(fri2);
+  const cur  = allEntries[curIdx];
+  const next = allEntries[nextIdx];
 
-  const card1 = jt1
-    ? buildCard({ date: jt1.date, endDate: sat1, badgeText: 'Deze week',     badgeClass: 'badge-current', isCurrent: true,  beginDay: fmtWeekday(jt1.date), eindeDay: 'za.' })
-    : buildCard({ date: fri1,     endDate: sat1, badgeText: 'Deze week',     badgeClass: 'badge-current', isCurrent: true,  beginDay: 'vr.', eindeDay: 'za.' });
+  // Check of er een Jomtov valt vlak voor de eerstvolgende Sjabbat
+  const thisFri = getThisFriday();
+  const jt = getJomtovBeforeFriday(thisFri);
 
-  const card2 = jt2
-    ? buildCard({ date: jt2.date, endDate: sat2, badgeText: 'Volgende week', badgeClass: 'badge-next',    isCurrent: false, beginDay: fmtWeekday(jt2.date), eindeDay: 'za.' })
-    : buildCard({ date: fri2,     endDate: sat2, badgeText: 'Volgende week', badgeClass: 'badge-next',    isCurrent: false, beginDay: 'vr.', eindeDay: 'za.' });
+  let card1, card2;
+
+  // Kaart 1: als Jomtov deze week en nog niet in allEntries als "huidige" → toon jomtov
+  if (jt && jt.iso < cur.iso) {
+    card1 = buildCard({ iso: jt.iso, badgeText: 'Deze week', badgeClass: 'badge-current', isCurrent: true });
+    card2 = buildCard({ iso: cur.iso, badgeText: 'Volgende', badgeClass: 'badge-next', isCurrent: false });
+  } else {
+    card1 = buildCard({ iso: cur.iso,  badgeText: 'Deze week',     badgeClass: 'badge-current', isCurrent: true  });
+    card2 = buildCard({ iso: next.iso, badgeText: 'Volgende week', badgeClass: 'badge-next',    isCurrent: false });
+  }
 
   document.getElementById('weeksGrid').innerHTML = card1 + card2;
 }
 
-// ── Picker: bouw lijst van alle vrijdagen in het datumbereik ──────────────────
-
-let allFridays = []; // array van Date-objecten, alle vrijdagen in de data
-
-function buildAllFridays() {
-  const keys  = Object.keys(SJABBAT_DATA).sort();
-  const first = new Date(keys[0]);
-  const last  = new Date(keys[keys.length - 1]);
-
-  // Ga naar de eerste vrijdag op of na 'first'
-  let d = new Date(first);
-  // Zoek dichtstbijzijnde vrijdag
-  while (d.getDay() !== 5) d = addDays(d, 1);
-
-  allFridays = [];
-  while (d <= addDays(last, 7)) {
-    allFridays.push(new Date(d));
-    d = addWeeks(d, 1);
-  }
-}
+// ── Picker ────────────────────────────────────────────────────────────────────
 
 function populatePicker() {
-  const select   = document.getElementById('weekPicker');
-  const thisFri  = getThisFriday();
-  const thisFriISO = toISO(thisFri);
-
+  const select  = document.getElementById('weekPicker');
+  const today   = toISO(new Date());
   select.innerHTML = '';
   let defaultIdx = 0;
 
-  allFridays.forEach((fri, idx) => {
-    const sat  = addDays(fri, 1);
-    const iso  = toISO(fri);
-    const jt   = getJomtovBeforeFriday(fri);
-    const entry = SJABBAT_DATA[iso];
-    const naam  = jt ? jt.entry.naam : (entry ? entry.naam : '');
-
+  allEntries.forEach(({ iso, entry }, idx) => {
+    const d   = new Date(iso + 'T12:00:00');
     const opt = document.createElement('option');
     opt.value = idx;
-    let label = `${fmtShort(fri)} – ${fmtShort(sat)}`;
-    if (naam) label += `  —  ${naam}`;
-    if (iso === thisFriISO) { label += ' ◀ deze week'; defaultIdx = idx; }
-    if (iso === toISO(addWeeks(thisFri, 1))) label += ' ◀ volgende week';
-    opt.textContent = label;
+    const dayStr = d.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    opt.textContent = `${dayStr}  —  ${entry.naam}`;
     select.appendChild(opt);
+    if (iso >= today && defaultIdx === 0) defaultIdx = idx;
   });
 
-  pickerOffset = defaultIdx;
-  select.value = pickerOffset;
+  pickerIndex = defaultIdx;
+  select.value = pickerIndex;
 }
 
 function renderExtraWeek() {
-  const fri   = allFridays[pickerOffset] || getThisFriday();
-  const sat   = addDays(fri, 1);
-  const jt    = getJomtovBeforeFriday(fri);
+  const entry = allEntries[pickerIndex];
+  if (!entry) return;
   const extra = document.getElementById('extraWeek');
-
-  const card = jt
-    ? buildCard({ date: jt.date, endDate: sat, badgeText: 'Gekozen week', badgeClass: 'badge-chosen', isCurrent: false, beginDay: fmtWeekday(jt.date), eindeDay: 'za.' })
-    : buildCard({ date: fri,     endDate: sat, badgeText: 'Gekozen week', badgeClass: 'badge-chosen', isCurrent: false, beginDay: 'vr.', eindeDay: 'za.' });
-
-  extra.innerHTML = card;
+  extra.innerHTML = buildCard({ iso: entry.iso, badgeText: 'Gekozen', badgeClass: 'badge-chosen', isCurrent: false });
   extra.classList.add('visible');
 }
 
@@ -221,10 +210,10 @@ function detectZone(lat, lng) {
   return null;
 }
 
-function setZone(zone, locationLabel) {
+function setZone(zone, label) {
   currentZone = zone;
   document.querySelectorAll('.zone-pill').forEach(p => p.classList.toggle('active', p.dataset.zone === zone));
-  if (locationLabel !== null) document.getElementById('locationText').textContent = locationLabel;
+  if (label !== null) document.getElementById('locationText').textContent = label;
   refresh();
 }
 
@@ -248,41 +237,27 @@ document.getElementById('locAllow').addEventListener('click', () => {
   document.getElementById('locBanner').classList.add('hidden');
   doGeolocate();
 });
-
 document.getElementById('locSkip').addEventListener('click', () => {
   document.getElementById('locBanner').classList.add('hidden');
   setZone('amsterdam', 'Standaard: Gr. Amsterdam');
 });
-
 document.getElementById('zonePills').addEventListener('click', e => {
   if (!e.target.classList.contains('zone-pill')) return;
   setZone(e.target.dataset.zone, 'Handmatig gekozen');
 });
-
 document.getElementById('weekPicker').addEventListener('change', e => {
-  pickerOffset = parseInt(e.target.value);
+  pickerIndex = parseInt(e.target.value);
   renderExtraWeek();
 });
-
 document.getElementById('prevWeek').addEventListener('click', () => {
-  if (pickerOffset > 0) {
-    pickerOffset--;
-    document.getElementById('weekPicker').value = pickerOffset;
-    renderExtraWeek();
-  }
+  if (pickerIndex > 0) { pickerIndex--; document.getElementById('weekPicker').value = pickerIndex; renderExtraWeek(); }
 });
-
 document.getElementById('nextWeek').addEventListener('click', () => {
-  if (pickerOffset < allFridays.length - 1) {
-    pickerOffset++;
-    document.getElementById('weekPicker').value = pickerOffset;
-    renderExtraWeek();
-  }
+  if (pickerIndex < allEntries.length - 1) { pickerIndex++; document.getElementById('weekPicker').value = pickerIndex; renderExtraWeek(); }
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-
 setZone('amsterdam', 'Locatie bepalen…');
-buildAllFridays();
+buildAllEntries();
 populatePicker();
 refresh();
